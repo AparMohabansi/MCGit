@@ -21,6 +21,6 @@ public class MCGit implements ModInitializer {
 
 		LOGGER.info("Hello Fabric world!");
 
-		ItemPlacedHandler.register();
+		ItemBrokeHandler.register();
 	}
 }
