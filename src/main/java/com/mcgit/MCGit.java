@@ -5,6 +5,16 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.world.InteractionResult; // <--- This was ActionResult
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;  // <--- This was Text
+import net.minecraft.world.level.Level;       // <--- This was World
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MCGit implements ModInitializer {
 	public static final String MOD_ID = "mcgit";
 
@@ -20,5 +30,15 @@ public class MCGit implements ModInitializer {
 		// Proceed with mild caution.
 
 		LOGGER.info("Hello Fabric world!");
+
+		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+			if (!world.isClientSide()) {
+				ItemStack stack = player.getItemInHand(hand);
+				if (stack.getItem() instanceof BlockItem) {
+					player.displayClientMessage(Component.literal("You placed: ").append(stack.getHoverName()),false);
+				}
+			}
+			return InteractionResult.PASS;
+		});
 	}
 }
