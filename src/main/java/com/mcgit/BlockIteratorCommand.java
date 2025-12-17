@@ -53,10 +53,6 @@ public class BlockIteratorCommand {
         // 3. Invoke the iterator logic
         BlockIterator.iterateRegion(level, pos1, pos2, source.getPlayer());
 
-        // 4. Send success message to the command executor
-        String coords = String.format("(%d, %d, %d) to (%d, %d, %d)", x1, y1, z1, x2, y2, z2);
-        source.sendSuccess(() -> Component.literal("Started logging blocks in region " + coords + ". Check server console."), false);
-
         return 1;
     }
 }

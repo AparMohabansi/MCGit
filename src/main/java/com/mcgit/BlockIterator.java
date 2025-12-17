@@ -1,9 +1,12 @@
 package com.mcgit;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BlockIterator {
@@ -38,27 +41,46 @@ public class BlockIterator {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
 
-                    // Create a BlockPos object for the current coordinate
-                    BlockPos currentPos = new BlockPos(x, y, z);
+                    // ... inside the triple loop (x, y, z) ...
 
-                    // Get the BlockState at that position
+                    BlockPos currentPos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(currentPos);
 
-                    // Get the block's registry name (e.g., minecraft:stone)
-                    String blockId = state.getBlock().toString();
+                    // 1. Capture Registry Name
+                    String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
 
-                    // 3. Print the result
+                    // 2. Capture Properties
+                    StringBuilder propertiesBuilder = new StringBuilder();
+                    if (!state.getValues().isEmpty()) {
+                        propertiesBuilder.append("[");
+                        // Fix: We need a counter or flag to handle commas correctly
+                        int propCount = 0;
+                        for (var entry : state.getValues().entrySet()) {
+                            if (propCount > 0) propertiesBuilder.append(",");
+                            propertiesBuilder.append(entry.getKey().getName())
+                                    .append("=")
+                                    .append(entry.getValue().toString());
+                            propCount++;
+                        }
+                        propertiesBuilder.append("]");
+                    }
+                    String stateString = propertiesBuilder.toString();
 
-                    player.displayClientMessage(
-                            Component.literal("Block at ").append(String.valueOf(x))
-                                    .append(", ")
-                                    .append(String.valueOf(y))
-                                    .append(", ")
-                                    .append(String.valueOf(z))
-                                    .append("): ")
-                                    .append(blockId),
-                            false
-                    );
+                    // 3. Capture NBT
+                    String nbtString = "";
+                    BlockEntity blockEntity = level.getBlockEntity(currentPos);
+                    if (blockEntity != null) {
+                        // For Fabric (Intermediary Mappings)
+                        CompoundTag nbtTag = blockEntity.saveWithFullMetadata(level.registryAccess());
+                        nbtString = nbtTag.toString();
+                    }
+
+                    // 4. FINAL STORAGE STRING (With Absolute Positions)
+                    // Format: x,y,z|block_data
+                    // Example: 10,64,-50|minecraft:chest[facing=north]{Items:[...]}
+                    String fullBlockData = x + "," + y + "," + z + "|" + blockId + stateString + nbtString;
+
+                    player.displayClientMessage(Component.literal(fullBlockData), false);
 
                     // Optional: You can also use the BlockState to get properties
                     // System.out.println("State: " + state.toString());
