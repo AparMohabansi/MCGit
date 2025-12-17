@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "mcgit",
+	"version": "${version}",
+	"name": "MCGit",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/mcgit/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.mcgit.MCGit"
+		],
+		"client": [
+			"com.mcgit.MCGitClient"
+		],
+		"fabric-datagen": [
+			"com.mcgit.MCGitDataGenerator"
+		]
+	},
+	"mixins": [
+		"mcgit.mixins.json",
+		{
+			"config": "mcgit.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
