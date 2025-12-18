@@ -14,22 +14,18 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BlockIterator {
 
     public static void iterateRegion(Level level, BlockPos pos1, BlockPos pos2, Player player) {
 
         if (level.isClientSide()) {
-            return; // Server-side only
+            return;
         }
 
-        // 1. Setup file handling
-        // This saves to the root of your server or "run" folder
         File outputFile = new File("MCGit.txt");
-
-        // Notify player
-        player.displayClientMessage(Component.literal("Saving blocks to " + outputFile.getAbsolutePath() + "..."), false);
+        player.displayClientMessage(Component.literal("Saving absolute blocks to " + outputFile.getAbsolutePath() + "..."), false);
 
         int minX = Math.min(pos1.getX(), pos2.getX());
         int minY = Math.min(pos1.getY(), pos2.getY());
@@ -39,7 +35,6 @@ public class BlockIterator {
         int maxY = Math.max(pos1.getY(), pos2.getY());
         int maxZ = Math.max(pos1.getZ(), pos2.getZ());
 
-        // 2. Use try-with-resources to automatically close the writer
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
 
             int count = 0;
@@ -51,49 +46,46 @@ public class BlockIterator {
                         BlockPos currentPos = new BlockPos(x, y, z);
                         BlockState state = level.getBlockState(currentPos);
 
-                        // SKIP AIR (Optional: Reduces file size significantly)
-                        if (state.isAir()) {
-                            continue;
-                        }
+                        if (state.isAir()) continue;
 
-                        // --- Capture ID ---
+                        // 1. Get Block ID
                         String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
 
-                        // --- Capture Properties ---
-                        StringBuilder propertiesBuilder = new StringBuilder();
+                        // 2. Get Properties (Comma separated: "facing=north,waterlogged=false")
+                        // We do NOT add brackets [] so it's easier to parse manually in Java later.
+                        String properties = "";
                         if (!state.getValues().isEmpty()) {
-                            propertiesBuilder.append("[");
-                            int propCount = 0;
-                            for (Map.Entry<?, ?> entry : state.getValues().entrySet()) {
-                                if (propCount > 0) propertiesBuilder.append(",");
-                                // Cast to specific types to ensure correct .getName() access
-                                // Using raw entry with toString() is usually safe for basic dumping
-                                Property<?> property = (Property<?>) entry.getKey();
-                                String key = property.getName();
-                                String value = entry.getValue().toString();
-                                // In official mappings, property keys are Property<?>, so we can assume logic holds
-                                // But to be safe and simple with raw types:
-                                propertiesBuilder.append(key).append("=").append(entry.getValue().toString());
-                                propCount++;
-                            }
-                            propertiesBuilder.append("]");
+                            properties = state.getValues().entrySet().stream()
+                                    .map(entry -> {
+                                        Property<?> property = (Property<?>) entry.getKey();
+                                        return property.getName() + "=" + entry.getValue().toString();
+                                    })
+                                    .collect(Collectors.joining(","));
                         }
-                        String stateString = propertiesBuilder.toString();
 
-                        // --- Capture NBT ---
+                        // 3. Get NBT
                         String nbtString = "";
                         BlockEntity blockEntity = level.getBlockEntity(currentPos);
                         if (blockEntity != null) {
-                            // For Fabric (Intermediary Mappings)
                             CompoundTag nbtTag = blockEntity.saveWithFullMetadata(level.registryAccess());
+                            // It is still good practice to remove internal coords from the NBT data itself,
+                            // even when using absolute placement, to ensure the TileEntity accepts its new/current location.
+                            nbtTag.remove("x");
+                            nbtTag.remove("y");
+                            nbtTag.remove("z");
                             nbtString = nbtTag.toString();
+
+                            // Sanitize newlines to prevent file corruption
+                            nbtString = nbtString.replace("\n", "\\n").replace("\r", "");
                         }
 
-                        // --- Format Line ---
-                        // 10,64,-50|minecraft:chest[facing=north]{Items:...}
-                        String line = x + "," + y + "," + z + "|" + blockId + stateString + nbtString;
+                        // 4. Format: Absolute Coords | ID | Properties | NBT
+                        // Separated by pipes "|" for easy String.split("|")
+                        String line = currentPos.getX() + "," + currentPos.getY() + "," + currentPos.getZ() + "|" +
+                                blockId + "|" +
+                                properties + "|" +
+                                nbtString;
 
-                        // --- Write to File ---
                         writer.write(line);
                         writer.newLine();
 
