@@ -27,6 +27,11 @@ public class MCGit implements ModInitializer {
 			BlockIteratorCommand.register(dispatcher);
 		});
 
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			// Register your custom command here
+			BlockPlacerCommand.register(dispatcher);
+		});
+
 		ItemBrokeHandler.register();
 	}
 }
